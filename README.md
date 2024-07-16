@@ -1,13 +1,15 @@
 # my-laravel-app
-If you haven't already created a Laravel application, create a new Laravel project named `my-laravel-app`:
-mkdir my-laravel-app
+If you haven't already created a Laravel application, create a new Laravel project named: 
+`my-laravel-app`- mkdir my-laravel-app
 --------------------------------------------------
 **Step 2: Create Dockerfile**
 Create a `Dockerfile` in the root of your Laravel project
+
 sudo vi Dockerfile
 --------------------------------------------------
 **Step 3: Create Docker Compose File**
 Create a `docker-compose.yml` file in the root of your Laravel project 
+
 sudo vi docker-compose.yml
 ---------------------------------------------------
 **Step 4: Nginx Configuration**

@@ -25,7 +25,7 @@ Update your `.env` file to match the database configuration defined in `docker-c
 Now, you can build and start your Docker containers using Docker Compose:
 
 
-docker-compose up --build  //  
+docker-compose up --build      
 docker-compose up -d
 ----------------------------------------------------
 **7. Access Your Laravel Application**
@@ -34,6 +34,6 @@ Open your web browser and navigate to `http://localhost:8000`. You should see th
 ----------------------------------------------------
 **8. (Optional) Run Laravel Migrations**
 
-docker-compose exec app php artisan migrate   //  
+docker-compose exec app php artisan migrate       
 docker-compose exec app php artisan db:seed 
 -----------------------------------------------------

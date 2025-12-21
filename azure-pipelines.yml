@@ -21,61 +21,36 @@ jobs:
         $ErrorActionPreference = "Stop"
 
         $php = "C:\php\php.exe"
-        Write-Host "Checking PHP at: $php"
+        if (!(Test-Path $php)) { throw "PHP not found at $php" }
 
-        if (!(Test-Path $php)) {
-          Write-Host "❌ PHP not found at $php"
-          if (Test-Path "C:\php") { dir C:\php } else { Write-Host "C:\php folder does not exist" }
-          exit 1
-        }
-
-        # Add PHP to PATH for the rest of the job
         Write-Host "##vso[task.prependpath]C:\php"
-
         & $php -v
-        & $php -m
       displayName: "Verify PHP (Windows)"
+
+    - powershell: |
+        $ErrorActionPreference = "Stop"
+        git --version
+      displayName: "Verify Git"
 
     - powershell: |
         $ErrorActionPreference = "Stop"
         $php = "C:\php\php.exe"
 
-        Write-Host "Downloading composer.phar..."
         & $php -r "copy('https://getcomposer.org/composer-stable.phar', 'composer.phar');"
-
-        Write-Host "Composer version:"
         & $php .\composer.phar --version
       displayName: "Install Composer (local)"
 
     - powershell: |
         $ErrorActionPreference = "Stop"
         $php = "C:\php\php.exe"
-
-        # Avoid memory issues on Windows
         $env:COMPOSER_MEMORY_LIMIT = "-1"
 
-        Write-Host "Composer diagnose..."
-        & $php .\composer.phar diagnose
-
-        Write-Host "Running composer install..."
-        & $php .\composer.phar install `
-          --no-interaction `
-          --prefer-dist `
-          --no-progress `
-          --ignore-platform-reqs `
-          --no-scripts
-
+        & $php .\composer.phar install --no-interaction --prefer-dist --no-progress
       displayName: "Composer Install"
 
     - powershell: |
         $ErrorActionPreference = "Stop"
         $php = "C:\php\php.exe"
-
-        if (!(Test-Path ".env.example")) {
-          Write-Host "❌ .env.example not found in repo root"
-          dir
-          exit 1
-        }
 
         Copy-Item .env.example .env -Force
         & $php artisan key:generate --force
@@ -94,7 +69,6 @@ jobs:
     - powershell: |
         $ErrorActionPreference = "Stop"
         $php = "C:\php\php.exe"
-
         & $php artisan test --no-interaction
       displayName: "Run Laravel Tests"
 

@@ -3,6 +3,8 @@ trigger:
 
 variables:
   system.debug: 'true'
+  # This is the variable your template is checking (was Null in your log)
+  system.debugContext: 'true'
 
 pool:
   vmImage: ubuntu-latest
@@ -12,14 +14,15 @@ jobs:
   displayName: "Laravel CI Pipeline"
   steps:
 
-    # Include pre-steps template (MUST be a steps-template)
+    # Pre-steps template (steps template)
     - template: system-pre-steps.yml
+      parameters:
+        debugContext: 'true'
 
     - checkout: self
       fetchDepth: 1
       displayName: "Checkout Code"
 
-    # Install PHP + common Laravel extensions
     - script: |
         set -e
         sudo apt-get update
@@ -28,10 +31,8 @@ jobs:
           php-mysql php-sqlite3 unzip git curl
 
         php -v
-        php -m | sort
       displayName: "Install PHP + Extensions"
 
-    # Install Composer (official method)
     - script: |
         set -e
         php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
@@ -40,38 +41,35 @@ jobs:
         composer --version
       displayName: "Install Composer"
 
-    # Cache Composer downloads (optional but helpful)
-    - task: Cache@2
-      inputs:
-        key: 'composer | "$(Agent.OS)" | composer.lock'
-        restoreKeys: |
-          composer | "$(Agent.OS)"
-        path: $(Pipeline.Workspace)/.composer
-      displayName: "Cache Composer"
-    - script: |
-        echo "##vso[task.setvariable variable=COMPOSER_CACHE_DIR]$(Pipeline.Workspace)/.composer"
-      displayName: "Set Composer cache dir"
-
     - script: |
         set -e
         composer install --no-interaction --prefer-dist --no-progress
       displayName: "Composer Install"
 
-    # Laravel app setup for CI testing
     - script: |
         set -e
-
-        # Create .env
-        if [ -f .env.example ]; then
-          cp .env.example .env
-        else
-          echo ".env.example not found!"
-          exit 1
-        fi
-
-        # Generate key
+        cp .env.example .env
         php artisan key:generate --force
 
-        # Use sqlite in-memory for tests (most portable for CI)
+        # DB for CI (portable)
         {
-          echo
+          echo ""
+          echo "APP_ENV=testing"
+          echo "APP_DEBUG=true"
+          echo "DB_CONNECTION=sqlite"
+          echo "DB_DATABASE=:memory:"
+          echo "CACHE_DRIVER=array"
+          echo "SESSION_DRIVER=array"
+          echo "QUEUE_CONNECTION=sync"
+        } >> .env
+
+        php artisan config:clear
+      displayName: "Laravel Setup (testing env)"
+
+    - script: |
+        set -e
+        php artisan test --no-interaction
+      displayName: "Run Laravel Tests"
+
+    - script: echo "✅ Laravel CI Pipeline Completed Successfully"
+      displayName: "Pipeline Success"

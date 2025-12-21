@@ -10,49 +10,39 @@ pool:
 
 jobs:
 - job: LaravelCI
-  displayName: "Laravel CI Pipeline"
+  displayName: "Laravel CI Pipeline (Windows)"
   steps:
 
     - checkout: self
       fetchDepth: 1
       displayName: "Checkout Code"
 
+    # Make sure pipeline can find php.exe
     - powershell: |
-        # Install Chocolatey if missing
-        Set-ExecutionPolicy Bypass -Scope Process -Force
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-        if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
-          Write-Host "Installing Chocolatey..."
-          iex ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        }
-
-        choco --version
-      displayName: "Ensure Chocolatey"
-
-    - powershell: |
-        # Install PHP
-        choco install php -y
-        refreshenv
+        Write-Host "Adding C:\php to PATH for this job..."
+        Write-Host "##vso[task.prependpath]C:\php"
 
         php -v
         php -m
-      displayName: "Install PHP + Extensions (Windows)"
+      displayName: "Verify PHP (Windows)"
+
+    # Download Composer locally (no Chocolatey needed)
+    - powershell: |
+        $ErrorActionPreference = "Stop"
+
+        php -r "copy('https://getcomposer.org/composer-stable.phar', 'composer.phar');"
+        php .\composer.phar --version
+      displayName: "Install Composer (local)"
 
     - powershell: |
-        # Install Composer
-        php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-        php composer-setup.php --install-dir="C:\Windows\System32" --filename=composer
-        Remove-Item -Force composer-setup.php
+        $ErrorActionPreference = "Stop"
 
-        composer --version
-      displayName: "Install Composer (Windows)"
-
-    - powershell: |
-        composer install --no-interaction --prefer-dist --no-progress
+        php .\composer.phar install --no-interaction --prefer-dist --no-progress
       displayName: "Composer Install"
 
     - powershell: |
+        $ErrorActionPreference = "Stop"
+
         Copy-Item .env.example .env -Force
         php artisan key:generate --force
 
@@ -68,6 +58,8 @@ jobs:
       displayName: "Laravel Setup (testing env)"
 
     - powershell: |
+        $ErrorActionPreference = "Stop"
+
         php artisan test --no-interaction
       displayName: "Run Laravel Tests"
 

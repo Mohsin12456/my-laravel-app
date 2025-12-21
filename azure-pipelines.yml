@@ -17,7 +17,6 @@ jobs:
       fetchDepth: 1
       displayName: "Checkout Code"
 
-    # Verify PHP using full path (most reliable on self-hosted Windows)
     - powershell: |
         $ErrorActionPreference = "Stop"
 
@@ -26,25 +25,22 @@ jobs:
 
         if (!(Test-Path $php)) {
           Write-Host "❌ PHP not found at $php"
-          Write-Host "Listing C:\ ..."
-          dir C:\ | Select-Object Name
           if (Test-Path "C:\php") { dir C:\php } else { Write-Host "C:\php folder does not exist" }
           exit 1
         }
 
-        # Make php available for later steps in this job
+        # Add PHP to PATH for the rest of the job
         Write-Host "##vso[task.prependpath]C:\php"
 
         & $php -v
         & $php -m
       displayName: "Verify PHP (Windows)"
 
-    # Install Composer locally (no admin, no choco)
     - powershell: |
         $ErrorActionPreference = "Stop"
-
         $php = "C:\php\php.exe"
-        Write-Host "Downloading composer.phar ..."
+
+        Write-Host "Downloading composer.phar..."
         & $php -r "copy('https://getcomposer.org/composer-stable.phar', 'composer.phar');"
 
         Write-Host "Composer version:"
@@ -53,14 +49,26 @@ jobs:
 
     - powershell: |
         $ErrorActionPreference = "Stop"
-
         $php = "C:\php\php.exe"
-        & $php .\composer.phar install --no-interaction --prefer-dist --no-progress
+
+        # Avoid memory issues on Windows
+        $env:COMPOSER_MEMORY_LIMIT = "-1"
+
+        Write-Host "Composer diagnose..."
+        & $php .\composer.phar diagnose
+
+        Write-Host "Running composer install..."
+        & $php .\composer.phar install `
+          --no-interaction `
+          --prefer-dist `
+          --no-progress `
+          --ignore-platform-reqs `
+          --no-scripts
+
       displayName: "Composer Install"
 
     - powershell: |
         $ErrorActionPreference = "Stop"
-
         $php = "C:\php\php.exe"
 
         if (!(Test-Path ".env.example")) {
@@ -85,8 +93,8 @@ jobs:
 
     - powershell: |
         $ErrorActionPreference = "Stop"
-
         $php = "C:\php\php.exe"
+
         & $php artisan test --no-interaction
       displayName: "Run Laravel Tests"
 

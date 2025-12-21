@@ -4,7 +4,7 @@ trigger:
 variables:
   system.debug: 'true'
   # This is the variable your template is checking (was Null in your log)
-  system.debugContext: 'false'
+  system.debugContext: 'true'
 
 pool:
   vmImage: 'SelfHosted'

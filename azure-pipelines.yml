@@ -17,34 +17,60 @@ jobs:
       fetchDepth: 1
       displayName: "Checkout Code"
 
-    # Make sure pipeline can find php.exe
-    - powershell: |
-        Write-Host "Adding C:\php to PATH for this job..."
-        Write-Host "##vso[task.prependpath]C:\php"
-
-        php -v
-        php -m
-      displayName: "Verify PHP (Windows)"
-
-    # Download Composer locally (no Chocolatey needed)
+    # Verify PHP using full path (most reliable on self-hosted Windows)
     - powershell: |
         $ErrorActionPreference = "Stop"
 
-        php -r "copy('https://getcomposer.org/composer-stable.phar', 'composer.phar');"
-        php .\composer.phar --version
+        $php = "C:\php\php.exe"
+        Write-Host "Checking PHP at: $php"
+
+        if (!(Test-Path $php)) {
+          Write-Host "❌ PHP not found at $php"
+          Write-Host "Listing C:\ ..."
+          dir C:\ | Select-Object Name
+          if (Test-Path "C:\php") { dir C:\php } else { Write-Host "C:\php folder does not exist" }
+          exit 1
+        }
+
+        # Make php available for later steps in this job
+        Write-Host "##vso[task.prependpath]C:\php"
+
+        & $php -v
+        & $php -m
+      displayName: "Verify PHP (Windows)"
+
+    # Install Composer locally (no admin, no choco)
+    - powershell: |
+        $ErrorActionPreference = "Stop"
+
+        $php = "C:\php\php.exe"
+        Write-Host "Downloading composer.phar ..."
+        & $php -r "copy('https://getcomposer.org/composer-stable.phar', 'composer.phar');"
+
+        Write-Host "Composer version:"
+        & $php .\composer.phar --version
       displayName: "Install Composer (local)"
 
     - powershell: |
         $ErrorActionPreference = "Stop"
 
-        php .\composer.phar install --no-interaction --prefer-dist --no-progress
+        $php = "C:\php\php.exe"
+        & $php .\composer.phar install --no-interaction --prefer-dist --no-progress
       displayName: "Composer Install"
 
     - powershell: |
         $ErrorActionPreference = "Stop"
 
+        $php = "C:\php\php.exe"
+
+        if (!(Test-Path ".env.example")) {
+          Write-Host "❌ .env.example not found in repo root"
+          dir
+          exit 1
+        }
+
         Copy-Item .env.example .env -Force
-        php artisan key:generate --force
+        & $php artisan key:generate --force
 
         Add-Content .env "`nAPP_ENV=testing"
         Add-Content .env "APP_DEBUG=true"
@@ -54,13 +80,14 @@ jobs:
         Add-Content .env "SESSION_DRIVER=array"
         Add-Content .env "QUEUE_CONNECTION=sync"
 
-        php artisan config:clear
+        & $php artisan config:clear
       displayName: "Laravel Setup (testing env)"
 
     - powershell: |
         $ErrorActionPreference = "Stop"
 
-        php artisan test --no-interaction
+        $php = "C:\php\php.exe"
+        & $php artisan test --no-interaction
       displayName: "Run Laravel Tests"
 
     - powershell: |

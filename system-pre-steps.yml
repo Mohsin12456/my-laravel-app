@@ -7,9 +7,9 @@ steps:
 - script: echo "✅ system-pre-steps.yml loaded"
   displayName: "Pre-steps marker"
 
-- ${{ if or(eq(parameters.debugContext, 'true'), eq(variables['system.debugContext'], 'true')) }}:
+- ${{ if eq(parameters.debugContext, 'true') }}:
   - script: |
-      echo "Debug enabled"
+      echo "Debug context enabled"
       echo "Branch: $(Build.SourceBranch)"
       echo "Commit: $(Build.SourceVersion)"
-    displayName: "Debug context"
+    displayName: "Debug context (short)"

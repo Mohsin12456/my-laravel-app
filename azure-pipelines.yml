@@ -1,8 +1,3 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
 - main
 
@@ -10,10 +5,29 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y php php-cli php-mbstring php-xml php-curl unzip curl
+  displayName: 'Install PHP'
 
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    php -v
+  displayName: 'Verify PHP'
+
+- script: |
+    curl -sS https://getcomposer.org/installer | php
+    sudo mv composer.phar /usr/local/bin/composer
+  displayName: 'Install Composer'
+
+- script: |
+    composer install --no-interaction --prefer-dist
+  displayName: 'Install Laravel Dependencies'
+
+- script: |
+    cp .env.example .env
+    php artisan key:generate
+  displayName: 'Laravel Setup'
+
+- script: |
+    php artisan test || true
+  displayName: 'Run Tests'

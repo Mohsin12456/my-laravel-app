@@ -4,12 +4,15 @@ parameters:
   default: 'false'
 
 steps:
+# Always at least one step so template never becomes steps:[]
 - script: echo "✅ system-pre-steps.yml loaded"
   displayName: "Pre-steps marker"
 
-- ${{ if eq(parameters.debugContext, 'true') }}:
+# Optional short debug (NO convertToJson dump)
+- ${{ if or(eq(parameters.debugContext, 'true'), eq(variables['system.debugContext'], 'true')) }}:
   - script: |
       echo "Debug context enabled"
       echo "Branch: $(Build.SourceBranch)"
       echo "Commit: $(Build.SourceVersion)"
+      echo "Agent OS: $(Agent.OS)"
     displayName: "Debug context (short)"

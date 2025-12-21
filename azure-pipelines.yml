@@ -7,7 +7,7 @@ variables:
   system.debugContext: 'true'
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'SelfHosted'
 
 jobs:
 - job: LaravelCI

@@ -4,31 +4,12 @@ parameters:
   default: 'false'
 
 steps:
-# Always include at least one step so template never resolves to empty
-- script: |
-    echo "✅ system-pre-steps.yml loaded"
+- script: echo "✅ system-pre-steps.yml loaded"
   displayName: "Pre-steps marker"
 
-# Optional debug context (controlled by parameter OR variable)
 - ${{ if or(eq(parameters.debugContext, 'true'), eq(variables['system.debugContext'], 'true')) }}:
   - script: |
-      echo "==== DEBUG CONTEXT ===="
-      echo "Build.DefinitionName: $(Build.DefinitionName)"
-      echo "Build.BuildNumber:    $(Build.BuildNumber)"
-      echo "Build.SourceBranch:   $(Build.SourceBranch)"
-      echo "Build.SourceVersion:  $(Build.SourceVersion)"
-      echo "System.TeamProject:   $(System.TeamProject)"
-      echo "Agent.OS:             $(Agent.OS)"
-      echo "Agent.Name:           $(Agent.Name)"
-      echo "Pipeline.Workspace:   $(Pipeline.Workspace)"
-      echo "======================="
+      echo "Debug enabled"
+      echo "Branch: $(Build.SourceBranch)"
+      echo "Commit: $(Build.SourceVersion)"
     displayName: "Debug context"
-
-# Optional: sanity checks that are safe and helpful
-- script: |
-    set -e
-    echo "Repo root:"
-    pwd
-    echo "Files:"
-    ls -la
-  displayName: "Workspace sanity check"

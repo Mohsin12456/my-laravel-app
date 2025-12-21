@@ -1,58 +1,40 @@
-# azure-pipelines.yml
-
-trigger:
-- main
-
-variables:
-  system.debug: true   # Optional: enables verbose logging
-
-pool:
-  vmImage: ubuntu-latest
-
 jobs:
 - job: LaravelCI
   displayName: "Laravel CI Pipeline"
   steps:
 
-    # 0️⃣ Optional: include pre-steps template if it exists
-    # Ensure system-pre-steps.yml exists in the repo, otherwise remove this block
+    # Include pre-steps template
     - template: system-pre-steps.yml
 
-    # 1️⃣ Checkout code
+    # Main Laravel steps
     - checkout: self
       fetchDepth: 1
       displayName: "Checkout Code"
 
-    # 2️⃣ Install PHP
     - script: |
         sudo apt-get update
         sudo apt-get install -y php php-cli php-mbstring php-xml php-curl php-zip unzip
         php -v
       displayName: "Install PHP"
 
-    # 3️⃣ Install Composer
     - script: |
         curl -sS https://getcomposer.org/installer | php
         sudo mv composer.phar /usr/local/bin/composer
         composer --version
       displayName: "Install Composer"
 
-    # 4️⃣ Install Laravel dependencies
     - script: |
         composer install --no-interaction --prefer-dist
       displayName: "Composer Install"
 
-    # 5️⃣ Laravel basic setup
     - script: |
         cp .env.example .env || true
         php artisan key:generate || true
       displayName: "Laravel Setup"
 
-    # 6️⃣ Run Laravel tests (optional but recommended)
     - script: |
         php artisan test
       displayName: "Run Laravel Tests"
 
-    # 7️⃣ Success message
     - script: echo "✅ Laravel CI Pipeline Completed Successfully"
       displayName: "Pipeline Success"

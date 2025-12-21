@@ -3,7 +3,6 @@ trigger:
 
 variables:
   system.debug: 'false'
-  # This is the variable your template is checking (was Null in your log)
   system.debugContext: 'false'
 
 pool:
@@ -14,62 +13,64 @@ jobs:
   displayName: "Laravel CI Pipeline"
   steps:
 
-    # Pre-steps template (steps template)
-    - template: system-pre-steps.yml
-      parameters:
-        debugContext: 'true'
-
     - checkout: self
       fetchDepth: 1
       displayName: "Checkout Code"
 
-    - script: |
-        set -e
-        sudo apt-get update
-        sudo apt-get install -y \
-          php php-cli php-mbstring php-xml php-curl php-zip php-bcmath php-intl php-gd \
-          php-mysql php-sqlite3 unzip git curl
+    - powershell: |
+        # Install Chocolatey if missing
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+        if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+          Write-Host "Installing Chocolatey..."
+          iex ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+        }
+
+        choco --version
+      displayName: "Ensure Chocolatey"
+
+    - powershell: |
+        # Install PHP
+        choco install php -y
+        refreshenv
 
         php -v
-      displayName: "Install PHP + Extensions"
+        php -m
+      displayName: "Install PHP + Extensions (Windows)"
 
-    - script: |
-        set -e
+    - powershell: |
+        # Install Composer
         php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-        php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-        rm -f composer-setup.php
-        composer --version
-      displayName: "Install Composer"
+        php composer-setup.php --install-dir="C:\Windows\System32" --filename=composer
+        Remove-Item -Force composer-setup.php
 
-    - script: |
-        set -e
+        composer --version
+      displayName: "Install Composer (Windows)"
+
+    - powershell: |
         composer install --no-interaction --prefer-dist --no-progress
       displayName: "Composer Install"
 
-    - script: |
-        set -e
-        cp .env.example .env
+    - powershell: |
+        Copy-Item .env.example .env -Force
         php artisan key:generate --force
 
-        # DB for CI (portable)
-        {
-          echo ""
-          echo "APP_ENV=testing"
-          echo "APP_DEBUG=true"
-          echo "DB_CONNECTION=sqlite"
-          echo "DB_DATABASE=:memory:"
-          echo "CACHE_DRIVER=array"
-          echo "SESSION_DRIVER=array"
-          echo "QUEUE_CONNECTION=sync"
-        } >> .env
+        Add-Content .env "`nAPP_ENV=testing"
+        Add-Content .env "APP_DEBUG=true"
+        Add-Content .env "DB_CONNECTION=sqlite"
+        Add-Content .env "DB_DATABASE=:memory:"
+        Add-Content .env "CACHE_DRIVER=array"
+        Add-Content .env "SESSION_DRIVER=array"
+        Add-Content .env "QUEUE_CONNECTION=sync"
 
         php artisan config:clear
       displayName: "Laravel Setup (testing env)"
 
-    - script: |
-        set -e
+    - powershell: |
         php artisan test --no-interaction
       displayName: "Run Laravel Tests"
 
-    - script: echo "✅ Laravel CI Pipeline Completed Successfully"
+    - powershell: |
+        Write-Host "✅ Laravel CI Pipeline Completed Successfully"
       displayName: "Pipeline Success"

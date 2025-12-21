@@ -13,7 +13,7 @@ jobs:
   steps:
 
     # Include pre-steps template
-    - template: system-pre-steps.yml
+    #- template: system-pre-steps.yml
 
     # Laravel CI steps
     - checkout: self

@@ -1,0 +1,5 @@
+# system-pre-steps.yml
+
+steps:
+- script: echo "✅ Running system pre-steps"
+  displayName: "System Pre-Steps"

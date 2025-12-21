@@ -1,3 +1,12 @@
+trigger:
+- main
+
+variables:
+  system.debug: true
+
+pool:
+  vmImage: ubuntu-latest
+
 jobs:
 - job: LaravelCI
   displayName: "Laravel CI Pipeline"
@@ -6,7 +15,7 @@ jobs:
     # Include pre-steps template
     - template: system-pre-steps.yml
 
-    # Main Laravel steps
+    # Laravel CI steps
     - checkout: self
       fetchDepth: 1
       displayName: "Checkout Code"
